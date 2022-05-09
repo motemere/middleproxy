@@ -7,4 +7,7 @@ WORKDIR /usr/src/app
 
 RUN make build
 
+EXPOSE 8090
+WORKDIR /usr/src/app
+
 CMD ["java", "-jar","build/libs/middleproxy-0.0.1-SNAPSHOT.jar"]
