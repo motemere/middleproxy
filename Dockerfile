@@ -1,13 +1,32 @@
+# build container
+FROM gradle:7.4.1-jdk17-alpine AS TEMP_BUILD_IMAGE
+
+ENV APP_HOME=/usr/app/
+WORKDIR $APP_HOME
+
+COPY build.gradle settings.gradle $APP_HOME  
+COPY gradle $APP_HOME/gradle
+COPY --chown=gradle:gradle . /home/gradle/src
+
+USER root
+
+RUN chown -R gradle /home/gradle/src    
+
+COPY . .
+
+RUN gradle clean build -x test -x checkstyleMain -x checkstyleTest
+
+# target container
 FROM openjdk:17-slim
 
-RUN apt-get update && apt-get install -y make
+ARG BUILD_VERSION
 
-COPY . /usr/src/app
-WORKDIR /usr/src/app
+ENV ARTIFACT_NAME=middleproxy-${BUILD_VERSION}.jar
+ENV APP_HOME=/usr/app/
 
-RUN make build
+WORKDIR $APP_HOME
+COPY --from=TEMP_BUILD_IMAGE $APP_HOME/build/libs/$ARTIFACT_NAME .
 
 EXPOSE 8090
-WORKDIR /usr/src/app
 
-CMD ["java", "-jar","build/libs/middleproxy-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT exec java -jar ${ARTIFACT_NAME}
