@@ -13,6 +13,13 @@ repositories {
     mavenCentral()
 }
 
+git {
+    implementation 'https://github.com/motemere/testproject-dto', {
+        name 'MessageDto'
+        tag '0.0.1-SNAPSHOT'
+    }
+}
+
 dependencies {
     implementation 'io.opentracing.contrib:opentracing-spring-jaeger-cloud-starter:3.3.1'
 
