@@ -1,35 +1,56 @@
 plugins {
-    id 'org.springframework.boot' version '2.6.7'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'org.springframework.boot' version '4.0.6'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'java'
     id 'checkstyle'
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
 group = 'me.motemere'
-version = '0.0.2-SNAPSHOT'
-sourceCompatibility = '17'
+version = version = project.version
 
 repositories {
     mavenCentral()
-}
-
-git {
-    implementation 'https://github.com/motemere/testproject-dto', {
-        name 'MessageDto'
-        tag '0.0.1-SNAPSHOT'
+    maven {
+        name = 'GitHubPackages'
+        url = uri("https://maven.pkg.github.com/motemere/testproject-dto")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("GPR_USER")
+            password = project.findProperty("gpr.key") ?: System.getenv("GPR_TOKEN")
+        }
     }
 }
 
-dependencies {
-    implementation 'io.opentracing.contrib:opentracing-spring-jaeger-cloud-starter:3.3.1'
-
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
-
-    implementation 'org.springframework.kafka:spring-kafka'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.kafka:spring-kafka-test'
+configurations {
+    mockitoAgent
 }
 
-tasks.named('test') {
+dependencies {
+    implementation 'me.motemere:testproject-dto:1.0.1'
+
+    implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation "org.springframework.integration:spring-integration-websocket:7.0.4"
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    implementation 'org.springframework.kafka:spring-kafka'
+    testImplementation 'org.springframework.boot:spring-boot-kafka'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+    mockitoAgent('org.mockito:mockito-core') { transitive = false }
+}
+
+test {
     useJUnitPlatform()
+    jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
+    jvmArgs "-Xshare:off"
 }

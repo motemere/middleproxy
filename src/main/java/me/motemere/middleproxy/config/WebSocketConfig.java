@@ -12,21 +12,21 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-  @Value(value = "${websocket.url.path}")
-  private String path;
+    @Value(value = "${websocket.url.path}")
+    private String path;
 
-  @Autowired
-  private WebSocketHandler messageHandler;
+    @Autowired
+    private WebSocketHandler messageHandler;
 
-  /**
-   * Register the WebSocketHandler with the WebSocketHandlerRegistry.
-   *
-   * @param registry the WebSocketHandlerRegistry.
-   */
-  @Override
-  public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-    registry.addHandler(messageHandler, path)
-        .setAllowedOrigins("*");
-  }
+    /**
+     * Register the WebSocketHandler with the WebSocketHandlerRegistry.
+     *
+     * @param registry the WebSocketHandlerRegistry.
+     */
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(messageHandler, path)
+                .setAllowedOrigins("*");
+    }
 
 }
