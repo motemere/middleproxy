@@ -1,32 +1,45 @@
 # build container
-FROM gradle:7.4.1-jdk17-alpine AS TEMP_BUILD_IMAGE
+FROM gradle:9.4.0-jdk25-alpine AS temp_build_image
+
+ARG GPR_USER
+ARG GPR_TOKEN
 
 ENV APP_HOME=/usr/app/
 WORKDIR $APP_HOME
-
-COPY build.gradle settings.gradle $APP_HOME  
-COPY gradle $APP_HOME/gradle
-COPY --chown=gradle:gradle . /home/gradle/src
-
-USER root
-
-RUN chown -R gradle /home/gradle/src    
 
 COPY . .
 
 RUN gradle clean build -x test -x checkstyleMain -x checkstyleTest
 
+# jlink — minimal JRE
+FROM eclipse-temurin:25-jdk-alpine AS jre_build
+
+COPY --from=temp_build_image /usr/app/build/libs/*.jar /app.jar
+
+RUN jar xf /app.jar && \
+    jdeps --ignore-missing-deps \
+          --print-module-deps \
+          --multi-release 25 \
+          --recursive \
+          --class-path 'BOOT-INF/lib/*' \
+          /app.jar > /modules.txt && \
+    jlink \
+          --add-modules $(cat /modules.txt) \
+          --strip-debug \
+          --no-man-pages \
+          --no-header-files \
+          --compress=2 \
+          --output /custom-jre
+
 # target container
-FROM openjdk:17-slim
+FROM alpine:3.21
 
-ARG BUILD_VERSION
+ENV JAVA_HOME=/custom-jre
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
-ENV ARTIFACT_NAME=middleproxy-${BUILD_VERSION}.jar
-ENV APP_HOME=/usr/app/
-
-WORKDIR $APP_HOME
-COPY --from=TEMP_BUILD_IMAGE $APP_HOME/build/libs/$ARTIFACT_NAME .
+COPY --from=jre_build /custom-jre /custom-jre
+COPY --from=temp_build_image /usr/app/build/libs/*.jar /app/app.jar
 
 EXPOSE 8090
 
-ENTRYPOINT exec java -jar ${ARTIFACT_NAME}
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

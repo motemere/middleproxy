@@ -9,23 +9,30 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      -
-        name: Login to DockerHub
-        uses: docker/login-action@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get version from Gradle
+        id: version
+        run: |
+          VERSION=$(grep "^version=" gradle.properties | cut -d'=' -f2)
+          echo "value=$VERSION" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to DockerHub
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
-        name: Build and push
-        uses: docker/build-push-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v7
         with:
           push: true
-          tags: motemere/testproject-middleproxy:latest,motemere/testproject-middleproxy:0.0.2-SNAPSHOT
+          tags: |
+            motemere/testproject-middleproxy:latest
+            motemere/testproject-middleproxy:${{ steps.version.outputs.value }}
           build-args: |
-            BUILD_VERSION=0.0.2-SNAPSHOT
+            BUILD_VERSION=${{ steps.version.outputs.value }}
+            GPR_USER=${{ github.actor }}
+            GPR_TOKEN=${{ secrets.GITHUB_TOKEN }}

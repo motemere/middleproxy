@@ -38,3 +38,4 @@ out/
 
 ### git-dependencies ###
 libs/
+/build.log
